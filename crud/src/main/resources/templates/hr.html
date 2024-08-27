@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>HR System</title>
+
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/css/header.css">
+<style>
+    body {
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        margin-top: 20px;
+    }
+    .form-container {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-container h2 {
+        background-color: #007bff;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: .25rem;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        font-weight: bold;
+    }
+    .form-group input[type="date"],
+    .form-group select {
+        width: 100%;
+        padding: .375rem .75rem;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+    }
+    .btn {
+        font-size: 1rem;
+        padding: .5rem 1rem;
+        border-radius: .25rem;
+        cursor: pointer;
+        color: #ffffff;
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    .btn-secondary {
+        background-color: #007bff;
+        border: none;
+    }
+    .btn-secondary:hover {
+        background-color: #0056b3;
+    }
+    .text-center {
+        text-align: center;
+    }
+    .file-upload-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
+    .file-upload-container input[type="file"] {
+        margin-bottom: 10px;
+    }
+    .file-upload-container button {
+        font-size: 1rem;
+        padding: .5rem 1rem;
+        border-radius: .25rem;
+        cursor: pointer;
+        color: #ffffff;
+        background-color: #007bff;
+        border: none;
+    }
+    .file-upload-container button:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"> </script>
+<script>
+function fetchEmployees() {
+    var employeeSelect = document.getElementById("leaveEmployeename");
+    employeeSelect.innerHTML = '<option value="">Loading...</option>';
+
+    fetch('/fetchEmployees')
+        .then(response => response.json())
+        .then(data => {
+            employeeSelect.innerHTML = '<option value="">Select Employee Name</option>';
+            data.forEach(employee => {
+                var option = document.createElement("option");
+                option.textContent = employee; 
+                option.value = employee; 
+                employeeSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching employee names:', error);
+            employeeSelect.innerHTML = '<option value="">Error loading employee names</option>';
+        });
+}
+
+function applyForLeave() {
+    const employeename = document.getElementById('leaveEmployeename').value;
+    const status = document.getElementById('leaveStatus').value;
+    const startDate = document.getElementById('leaveStartDate').value;
+
+    fetch('/hrmodule/addhr', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employeename: employeename,
+            status: status,
+            startDate: startDate,
+        })
+    }).then(response => {
+        if (response.ok) {
+            alert('Leave applied successfully');
+        } else {
+            alert('Failed to apply for leave');
+        }
+    });
+}
+
+function generateExcel() {
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+
+   
+    if (!startDate || !endDate) {
+        alert('Please provide both start and end dates.');
+        return;
+    }
+
+  
+    const url = `/hrmodule/generateExcel?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Expecting Excel file
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to generate Excel file.');
+        }
+        return response.blob(); // Get the file as a blob
+    })
+    .then(blob => {
+        // Create a link element and set the download URL
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'report.xlsx'; // Default file name
+        link.click(); 
+        window.URL.revokeObjectURL(link.href); // Clean up
+    })
+    .catch(error => {
+        console.error('Error generating Excel file:', error);
+        alert('Failed to generate Excel file.');
+    });
+}
+function uploadFile() {
+    
+    const fileInput = document.querySelector('input[name="fileUpload"]');
+    const file = fileInput.files[0];
+
+  
+    if (!file) {
+        alert('Please select a file to upload.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('fileUpload', file);
+   
+
+    fetch('/hrmodule/uploadExcel', {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        if (response.ok) {
+            alert('File uploaded successfully');
+        } else {
+            alert('Failed to upload file');
+        }
+    }).catch(error => {
+        console.error('Error uploading file:', error);
+        alert('Failed to upload file');
+    });
+}
+
+window.onload = function() {
+fetchEmployees(); 
+};
+</script>
+</head>
+<body>
+<!-- <div th:replace="fragments/header :: header"></div>  -->
+<main> 
+<div class="container">
+    <!-- Leave Application Form -->
+    <div class="form-container">
+        <h2>HR System</h2>
+        <form method="post" onsubmit="applyForLeave(); return false;">
+            <div class="form-group">
+                <label for="leaveStatus">Status:</label>
+                <select name="status" id="leaveStatus">
+                    <option value="PL">PL</option>
+                    <option value="AB">AB</option>
+                    <option value="Half Day">Half Day</option>
+                    <option value="Leave">Leave</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="leaveStartDate">Start Date:</label>
+                <input type="date" id="leaveStartDate" name="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="leaveEmployeename">Employee Name:</label>
+                <select id="leaveEmployeename" name="employeename" required>
+                    <option value="">Select Employee Name</option>
+                </select>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Excel Generation Form -->
+    <div class="form-container">
+        <h2>Excel Report</h2>
+<form onsubmit="generateExcel(); return false;">
+
+            <div class="form-group">
+                <label for="reportStartDate">Start Date:</label>
+                <input type="date" id="reportStartDate" name="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="reportEndDate">End Date:</label>
+                <input type="date" id="reportEndDate" name="endDate" required>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-secondary">Generate Excel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- CSV Upload Form -->
+    <div class="form-container file-upload-container">
+        <h2>Upload CSV</h2>
+        <form action="#" onsubmit="uploadFile(); return false;" th:object="${fileUploadForm}" method="post" enctype="multipart/form-data">
+            <input type="file" name="fileUpload" accept=".xls,.xlsx" />
+            <button type="submit">Upload</button>
+        </form>
+        <div th:if="${message}" th:text="${message}"></div>
+    </div>
+</div>
+
+</main>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

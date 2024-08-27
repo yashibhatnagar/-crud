@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Data Report</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h2 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #333;
+            text-align: center;
+        }
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e1e1e1;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        input[type="date"]:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        td {
+            background-color: #fff;
+        }
+        .center-button {
+            text-align: center;
+        }
+        .result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2> Data Report</h2>
+        <form id="hrForm" onsubmit="FormSubmit(); return false;">
+            <div class="form-group">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate" name="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate" name="endDate" required>
+            </div>
+            <div class="form-group">
+                <label for="employeename">Employee Name:</label>
+                <select id="employeename" name="employeename" required>
+                    <option value="">Select Employee Name</option>
+                </select>
+            </div>
+            <div class="form-group center-button">
+                <button type="submit" class="btn">Fetch Data</button>
+            </div>
+        </form>
+        <div id="result" class="result"></div>
+    </div>
+    <script>
+    function fetchEmployees() {
+        var employeeSelect = document.getElementById("employeename");
+        employeeSelect.innerHTML = '<option value="">Loading...</option>';
+
+        fetch('/fetchEmployees')
+            .then(response => response.json())
+            .then(data => {
+                employeeSelect.innerHTML = '<option value="">Select Employee Name</option>';
+                data.forEach(employee => {
+                    var option = document.createElement("option");
+                    option.textContent = employee;
+                    option.value = employee;
+                    employeeSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching employee names:', error);
+                employeeSelect.innerHTML = '<option value="">Error loading employee names</option>';
+            });
+    }
+
+    function FormSubmit() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const employeeName = document.getElementById('employeename').value;
+
+        fetch(`/hrmodule/fetchhr?startDate=${startDate}&endDate=${endDate}&employeename=${employeeName}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '';
+
+                if (Array.isArray(data) && data.length > 0) {
+                    let table = '<table><thead><tr><th>ID</th><th>Employee Name</th><th>Status</th><th>Start Date</th><th>Modify Date</th><th>Actions</th></tr></thead><tbody>';
+                    data.forEach(item => {
+                    	table +=` <tr><td>${item.id}</td><td>${item.employeename}</td><td>${item.status}</td><td>${item.startDate}</td><td>${item.modifydate}</td><td><a href="/hrmodule/edithr?id=${item.id}"><button class="btn">Edit</button></a></td></tr>`;
+                    });
+                    table += '</tbody></table>';
+                    resultDiv.innerHTML = table;
+                } else {
+                    resultDiv.innerHTML = '<p>No data found for the given criteria.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                resultDiv.innerHTML = '<p>An error occurred while fetching data.</p>';
+            });
+    }
+
+    window.onload = function() {
+        fetchEmployees();
+    };
+
+    </script>
+</body>
+</html>

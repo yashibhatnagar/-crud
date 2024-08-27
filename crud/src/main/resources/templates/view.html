@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>View Employees</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/header.css">
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<main>
+<div class="container mt-5">
+    <h1>Employee List</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Contact</th>
+                <th>Address</th>
+                <th>Gender</th>
+                <th>Action</th>
+                <th>Picture</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="student : ${student}">
+                <td th:text="${student.id}"></td>
+                <td th:text="${student.firstname}"></td>
+                <td th:text="${student.lastname}"></td>
+                <td th:text="${student.email}"></td>
+                <td th:text="${student.contact}"></td>
+                <td th:text="${student.address}"></td>
+                <td th:text="${student.gender}"></td>
+             
+            <td>
+                    <!-- Edit Button -->
+                    <a th:href="@{/edit/{id}(id=${student.id})}" class="btn btn-primary btn-sm">Edit</a>
+                    
+                    <!-- Delete Form -->
+                    <form th:action="@{/delete/{id}(id=${student.id})}" method="post" style="display:inline;">
+                        <input type="hidden" name="_method" value="delete">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+                        <td>
+                    <div th:if="${student.imagePath}">
+                        <!-- Assuming images are served from /images/ path -->
+                        <img th:src="@{/images/{filename}(filename=${student.imagePath})}" alt="Profile Image" style="width: 100px; height: 100px; object-fit: cover;"/>
+                    </div>
+                    <div th:unless="${student.imagePath}">
+                        No Image
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+      <div class ="edit-link"><a href = "edit.html"> Edit</a></div>
+</div>
+</main>
+</body>
+</html>
